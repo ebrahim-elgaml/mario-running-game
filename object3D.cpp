@@ -252,6 +252,7 @@ class Coin
 		GLdouble y = 2;
 		bool taken = false;
 		lanePosition position = MIDDLE;
+		bool drawBool = false;
 		Coin() {z= x = 0; setLane(); }
 		Coin(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
 		void draw(){
@@ -277,11 +278,17 @@ class Coin
 				x = -1.5;
 			}
 		}
+		void activateAgain(double _z, double _x){
+			z = _z;
+			x = _x;
+			drawBool = true;
+			setLane();
+		}
 };
 //Vector Eye(20, 5, 20);
 //void pushSmallObstacle(SmallObstacle);
 void drawAllCoins();
-bool ableToBuildAt(double, lanePosition);
+bool ableToBuildAt(double, double);
 Vector Eye(0, 5, 10);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
@@ -292,7 +299,8 @@ Lane myLanes[2]= {Lane(Eye.z - 10,true,true), Lane(Eye.z - 10,false,false)};
 SmallObstacle mySmallObstacles[2] = {SmallObstacle(0, 0), SmallObstacle(0, 0)};
 LargeObstacle myLargeObstacles[2] = {LargeObstacle(0, 0), LargeObstacle(0, 0)};
 //vector<LargeObstacle> largeObstacles;
-vector<Coin> coins ;
+//vector<Coin> coins ;
+Coin myCoins[3] = {Coin(0,0), Coin(0,0), Coin(0,0)};
 double moveZ = -0.1;
 int cameraZoom = 0;
 double initialZ = Eye.z;
@@ -520,8 +528,13 @@ void myDisplay(void)
 
 }
 void drawAllCoins(){
-	for(Coin c: coins){
-		c.draw();
+//	for(Coin c: coins){
+//		c.draw();
+//	}
+	for(Coin c: myCoins){
+		if(c.drawBool){
+			c.draw();
+		}
 	}
 }
 void initGround(){
@@ -592,12 +605,21 @@ void removeObstacles(){
 //	}
 }
 void removeCoins(){
-	for(int i = 0 ; i<coins.size(); i++){
-		Coin s = coins.at(i);
-		if(s.z > mario.z+1.5){
-			coins.erase(coins.begin() + i);
-		}
+	if(myCoins[0].drawBool && myCoins[0].z > mario.z+1.5){
+		myCoins[0].drawBool = false;
 	}
+	if(myCoins[1].drawBool && myCoins[1].z > mario.z+1.5){
+		myCoins[1].drawBool = false;
+	}
+	if(myCoins[2].drawBool && myCoins[2].z > mario.z+1.5){
+		myCoins[2].drawBool = false;
+	}
+//	for(int i = 0 ; i<coins.size(); i++){
+//		Coin s = coins.at(i);
+//		if(s.z > mario.z+1.5){
+//			coins.erase(coins.begin() + i);
+//		}
+//	}
 }
 //void pushSmallObstacle(SmallObstacle s){
 //	if(ableToBuildAt(s.z, s.position)){
@@ -605,23 +627,27 @@ void removeCoins(){
 //	}
 //}
 void reactivateSmallObstacle(double z, double x){
-	if(!mySmallObstacles[0].drawBool){
-		mySmallObstacles[0].activateAgain(z, x);
-		return;
-	}
-	if(!mySmallObstacles[1].drawBool){
-		mySmallObstacles[1].activateAgain(z, x);
-		return;
+	if(ableToBuildAt(z, x)){
+		if(!mySmallObstacles[0].drawBool){
+			mySmallObstacles[0].activateAgain(z, x);
+			return;
+		}
+		if(!mySmallObstacles[1].drawBool){
+			mySmallObstacles[1].activateAgain(z, x);
+			return;
+		}
 	}
 }
 void reactivateLargeObstacle(double z, double x){
-	if(!myLargeObstacles[0].drawBool){
-		myLargeObstacles[0].activateAgain(z, x);
-		return;
-	}
-	if(!myLargeObstacles[1].drawBool){
-		myLargeObstacles[1].activateAgain(z, x);
-		return;
+	if(ableToBuildAt(z, x)){
+		if(!myLargeObstacles[0].drawBool){
+			myLargeObstacles[0].activateAgain(z, x);
+			return;
+		}
+		if(!myLargeObstacles[1].drawBool){
+			myLargeObstacles[1].activateAgain(z, x);
+			return;
+		}
 	}
 }
 //void pushLargeObstacle(LargeObstacle s){
@@ -710,7 +736,7 @@ void generateSecondObstacle(int last){
 void removeLanes(){
 	// TODO remove lanes that camera has finished
 }
-bool ableToBuildAt(double z, lanePosition p){
+bool ableToBuildAt(double z, double _x){
 //	for(LargeObstacle l : largeObstacles){
 //		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
 //			return false;
@@ -721,6 +747,15 @@ bool ableToBuildAt(double z, lanePosition p){
 //			return false;
 //		}
 //	}
+	lanePosition p;
+	if(_x > -0.2 && _x <0.2){
+		p = MIDDLE;
+	}else if(_x > 1.3 && _x <1.8){
+		p = RIGHT;
+
+	}else{
+		p = LEFT;
+	}
 	for(LargeObstacle l : myLargeObstacles){
 		if(l.drawBool && l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
 			return false;
@@ -731,11 +766,16 @@ bool ableToBuildAt(double z, lanePosition p){
 			return false;
 		}
 	}
-	for(Coin l : coins){
-		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+	for(Coin l : myCoins){
+		if(l.drawBool && l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
 			return false;
 		}
 	}
+//	for(Coin l : coins){
+//		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+//			return false;
+//		}
+//	}
 	return true;
 }
 void isCollide(){
@@ -766,13 +806,32 @@ void isCollide(){
 }
 
 void CollideCoin(){
-	for(int i = 0 ; i< coins.size(); i++){
-		Coin c = coins.at(i);
-		if(c.position == mario.position && c.z >= mario.z-0.1 && c.z <= mario.z+0.1 && !jumping){
-			myScore +=5;
-			coins.erase(coins.begin()+i);
-		}
+//	for(int i = 0 ; i< coins.size(); i++){
+//		Coin c = coins.at(i);
+//		if(c.position == mario.position && c.z >= mario.z-0.1 && c.z <= mario.z+0.1 && !jumping){
+//			myScore +=5;
+//			coins.erase(coins.begin()+i);
+//		}
+//	}
+	if(myCoins[0].drawBool && myCoins[0].position == mario.position && myCoins[0].z >= mario.z-0.1 && myCoins[0].z <= mario.z+0.1 && !jumping){
+		myScore +=5;
+		myCoins[0].drawBool = false;
 	}
+	if(myCoins[1].drawBool && myCoins[1].position == mario.position && myCoins[1].z >= mario.z-0.1 && myCoins[1].z <= mario.z+0.1 && !jumping){
+		myScore +=5;
+		myCoins[1].drawBool = false;
+	}
+	if(myCoins[2].drawBool && myCoins[2].position == mario.position && myCoins[2].z >= mario.z-0.1 && myCoins[2].z <= mario.z+0.1 && !jumping){
+		myScore +=5;
+		myCoins[2].drawBool = false;
+	}
+//	for(int i = 0 ; i< coins.size(); i++){
+//		Coin c = coins.at(i);
+//		if(c.position == mario.position && c.z >= mario.z-0.1 && c.z <= mario.z+0.1 && !jumping){
+//			myScore +=5;
+//			coins.erase(coins.begin()+i);
+//		}
+//	}
 }
 
 
@@ -785,15 +844,25 @@ void generateCoin(){
 		default : generateCoinsLine(1.5);
 	}
 }
-void pushCoin(Coin c){
-	if(ableToBuildAt(c.z, c.position)){
-		coins.push_back(c);
-	}
-}
+
+//void pushCoin(Coin c){
+//	if(ableToBuildAt(c.z, c.position)){
+//		coins.push_back(c);
+//	}
+//}
 void generateCoinsLine(double x){
-	pushCoin(Coin(Eye.z - 17, x ));
-	pushCoin(Coin(Eye.z - 20, x ));
-	pushCoin(Coin(Eye.z - 23, x ));
+	if(ableToBuildAt(Eye.z - 17, x)){
+		myCoins[0].activateAgain(Eye.z - 17, x);
+	}
+	if(ableToBuildAt(Eye.z - 20, x)){
+		myCoins[1].activateAgain(Eye.z - 20, x);
+	}
+	if(ableToBuildAt(Eye.z - 23, x)){
+		myCoins[2].activateAgain(Eye.z - 23, x);
+	}
+//	pushCoin(Coin(Eye.z - 17, x ));
+//	pushCoin(Coin(Eye.z - 20, x ));
+//	pushCoin(Coin(Eye.z - 23, x ));
 }
 
 void drawAllLanes(){

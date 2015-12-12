@@ -18,7 +18,6 @@ void generateSecondObstacle(int);
 void isCollide();
 void generateCoin();
 void generateCoinsLine(double);
-void activateLargeObstacle(double, double);
 int WIDTH = 1280;
 int HEIGHT = 720;
 
@@ -83,6 +82,34 @@ class Lane
 			glPushMatrix();
 			glTranslated(-2,0,0);
 			drawLan();
+			glPopMatrix();
+		}
+};
+class Target
+{
+	public:
+		GLdouble z;
+		Target() {z = 0;}
+		Target(GLdouble _z) : z(_z) {}
+		void draw(){
+			glColor3f(1,0,0);
+			glPushMatrix();
+			glTranslated(0,0,-10+1*z);
+			drawHouse();
+			glPopMatrix();
+		}
+		void drawHouse(){
+			glPushMatrix();
+			glScaled(6, 10, 1);
+			glTranslated(0, 0, 0);
+//			glutSolidCube(1);
+			glBegin(GL_QUADS);
+			glNormal3f(0, 1, 0); // Set quad normal direction.
+			glVertex3f(-0.5, 0, 0);
+			glVertex3f(0.5, 0, 0);
+			glVertex3f(0.5, 50, 0);
+			glVertex3f(-0.5, 50, 0);
+			glEnd();
 			glPopMatrix();
 		}
 };
@@ -263,6 +290,7 @@ int myTime = 0;
 double wordZ = 0;
 bool lose = false;
 int myScore = 0;
+Target target(0);
 //double wordY = 2;
 // Model Variables
 //Model_3DS model_house;
@@ -298,16 +326,43 @@ void InitLightSource()
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 }
 void writeWord(int x , int y , int z , string s){
-	glPushMatrix();
-	//glClear(GL_COLOR_BUFFER_BIT);
-	//glRasterPos3i(x, y,z);
-	//glRasterPos2d(x,y);
-	glRasterPos3d(x,y,z);
-	glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-	for(int i = 0; s[i]!='\0';i++){
-		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s[i]);
-	}
-	glPopMatrix();
+		glPushMatrix();
+		//glMatrixMode(GL_MODELVIEW);
+		glClear(GL_COLOR_BUFFER_BIT);
+		//glDisable(GL_DEPTH_TEST);
+		//glRasterPos3i(x, y,z);
+		//glDepthMask(GL_FALSE);
+		//glDisable(GL_DEPTH_TEST);
+		//glRasterPos2d(x,y);
+		glRasterPos3d(x,y,z);
+		glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+		for(int i = 0; s[i]!='\0';i++){
+			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s[i]);
+		}
+		//glEnable(GL_DEPTH_TEST);
+
+		glPopMatrix();
+
+
+
+
+//	glPushMatrix();
+//	//glMatrixMode(GL_MODELVIEW);
+//	glClear(GL_COLOR_BUFFER_BIT);
+//	//glDisable(GL_DEPTH_TEST);
+//	//glRasterPos3i(x, y,z);
+//	//glDepthMask(GL_FALSE);
+//	//glDisable(GL_DEPTH_TEST);
+//	//glRasterPos2d(x,y);
+//	glRasterPos3d(x,y,z);
+//	glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+//	for(int i = 0; s[i]!='\0';i++){
+//		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s[i]);
+//	}
+//	//glEnable(GL_DEPTH_TEST);
+//
+//	glPopMatrix();
+
 }
 //=======================================================================
 // Material Configuration Function
@@ -334,7 +389,7 @@ void InitMaterial()
 //=======================================================================
 void myInit(void)
 {
-	glClearColor(139.0/256, 69.0/256, 19.0/256, 0.0);
+	glClearColor(92.0/256, 242.0/256, 240.0/256, 0.0);
 
 	glMatrixMode(GL_PROJECTION);
 
@@ -404,15 +459,17 @@ void RenderGround()
 //=======================================================================
 void myDisplay(void)
 {
-
 	myInit();
 	//writeWord(-3,4,Eye.z,"hello");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glLoadIdentity();
+	glDepthMask(GL_FALSE);
 	if(lose){
 		writeWord(-3, 4, wordZ, "Game Over with score "+to_string(myScore));
 	}else{
 		writeWord(-3, 4, wordZ, to_string(myScore));
 	}
+	glDepthMask(GL_TRUE);
 	//gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 	// Draw Ground
 	//RenderGround();
@@ -441,7 +498,7 @@ void myDisplay(void)
 	mario.draw();
 	drawObstacles();
 	drawAllCoins();
-
+	target.draw();
 	glutSwapBuffers();
 
 }
@@ -463,6 +520,9 @@ void initGround(){
 		}
 		myLanes[1].drawBool = true;
 		initialZ = Eye.z;
+	}
+	if(!lose){
+		target.z += moveZ;
 	}
 //	if(lanes.size() == 0){
 //		lanes.push_back(Lane(Eye.z - 10));

@@ -11,6 +11,8 @@
 #define GLUT_KEY_ESCAPE 27
 using namespace std;
 //g++ o.cpp -o gl  -std=c++11 -lGL -lGLU -lglut -lGLEW
+void reactivateSmallObstacle(double, double);
+void reactivateLargeObstacle(double, double);
 void drawAllLanes();
 void drawObstacles();
 void generateFirstObstacle();
@@ -20,7 +22,6 @@ void generateCoin();
 void generateCoinsLine(double);
 int WIDTH = 1280;
 int HEIGHT = 720;
-
 char title[] = "Mario in Egypt";
 double rot = 0;
 // 3D Projection Options
@@ -189,6 +190,12 @@ class SmallObstacle
 				x = -1.5;
 			}
 		}
+		void activateAgain(double _z, double _x){
+			z = _z;
+			x = _x;
+			drawBool = true;
+			setLane();
+		}
 };
 class LargeObstacle
 {
@@ -197,6 +204,7 @@ class LargeObstacle
 		GLdouble x ;
 		GLdouble y = 4;
 		lanePosition position = MIDDLE;
+		bool drawBool = false;
 		LargeObstacle() {z= x = 0; setLane(); }
 		LargeObstacle(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
 		void draw(){
@@ -221,6 +229,12 @@ class LargeObstacle
 				position = LEFT;
 				x = -1.5;
 			}
+		}
+		void activateAgain(double _z, double _x){
+			z = _z;
+			x = _x;
+			drawBool = true;
+			setLane();
 		}
 //		void activateAgain(double _z, double _x){
 //			z = _z;
@@ -265,7 +279,7 @@ class Coin
 		}
 };
 //Vector Eye(20, 5, 20);
-void pushSmallObstacle(SmallObstacle);
+//void pushSmallObstacle(SmallObstacle);
 void drawAllCoins();
 bool ableToBuildAt(double, lanePosition);
 Vector Eye(0, 5, 10);
@@ -274,8 +288,10 @@ Vector Up(0, 1, 0);
 //vector<Lane> lanes;
 Lane myLanes[2]= {Lane(Eye.z - 10,true,true), Lane(Eye.z - 10,false,false)};
 //LargeObstacle myLargeObstacles[2] = {LargeObstacle(0,0), LargeObstacle(0,0)};
-vector<SmallObstacle> smallObstacles;
-vector<LargeObstacle> largeObstacles;
+//vector<SmallObstacle> smallObstacles;
+SmallObstacle mySmallObstacles[2] = {SmallObstacle(0, 0), SmallObstacle(0, 0)};
+LargeObstacle myLargeObstacles[2] = {LargeObstacle(0, 0), LargeObstacle(0, 0)};
+//vector<LargeObstacle> largeObstacles;
 vector<Coin> coins ;
 double moveZ = -0.1;
 int cameraZoom = 0;
@@ -465,10 +481,11 @@ void myDisplay(void)
 	//glLoadIdentity();
 	glDepthMask(GL_FALSE);
 	if(lose){
-		writeWord(-3, 4, wordZ, "Game Over with score "+to_string(myScore));
+		writeWord(-2, 4, wordZ, "Game Over with score "+to_string(myScore));
 	}else{
-		writeWord(-3, 4, wordZ, to_string(myScore));
+		writeWord(-2, 4, wordZ, to_string(myScore));
 	}
+	//writeWord(-2, 4, wordZ, to_string(mySmallObstacles[0].drawBool));
 	glDepthMask(GL_TRUE);
 	//gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 	// Draw Ground
@@ -542,18 +559,30 @@ void initGround(){
 //	}
 }
 void removeObstacles(){
-	for(int i = 0 ; i<smallObstacles.size(); i++){
-		SmallObstacle s = smallObstacles.at(i);
-		if(s.z > mario.z){
-			smallObstacles.erase(smallObstacles.begin() + i);
-		}
+//	for(int i = 0 ; i<smallObstacles.size(); i++){
+//		SmallObstacle s = smallObstacles.at(i);
+//		if(s.z > mario.z){
+//			smallObstacles.erase(smallObstacles.begin() + i);
+//		}
+//	}
+	if(mySmallObstacles[0].drawBool && mySmallObstacles[0].z>mario.z){
+		mySmallObstacles[0].drawBool = false;
 	}
-	for(int i = 0 ; i<largeObstacles.size(); i++){
-		LargeObstacle s = largeObstacles.at(i);
-		if(s.z > mario.z ){
-			largeObstacles.erase(largeObstacles.begin() + i);
-		}
+	if(mySmallObstacles[1].drawBool && mySmallObstacles[1].z>mario.z){
+		mySmallObstacles[1].drawBool = false;
 	}
+	if(myLargeObstacles[0].drawBool && myLargeObstacles[0].z>mario.z){
+		myLargeObstacles[0].drawBool = false;
+	}
+	if(myLargeObstacles[1].drawBool && myLargeObstacles[1].z>mario.z){
+		myLargeObstacles[1].drawBool = false;
+	}
+//	for(int i = 0 ; i<largeObstacles.size(); i++){
+//		LargeObstacle s = largeObstacles.at(i);
+//		if(s.z > mario.z ){
+//			largeObstacles.erase(largeObstacles.begin() + i);
+//		}
+//	}
 //	for(int i = 0 ; i<2; i++){
 //		LargeObstacle s = myLargeObstacles[i];
 //		if(s.z > mario.z && s.drawBool){
@@ -570,16 +599,36 @@ void removeCoins(){
 		}
 	}
 }
-void pushSmallObstacle(SmallObstacle s){
-	if(ableToBuildAt(s.z, s.position)){
-		smallObstacles.push_back(s);
+//void pushSmallObstacle(SmallObstacle s){
+//	if(ableToBuildAt(s.z, s.position)){
+//		smallObstacles.push_back(s);
+//	}
+//}
+void reactivateSmallObstacle(double z, double x){
+	if(!mySmallObstacles[0].drawBool){
+		mySmallObstacles[0].activateAgain(z, x);
+		return;
+	}
+	if(!mySmallObstacles[1].drawBool){
+		mySmallObstacles[1].activateAgain(z, x);
+		return;
 	}
 }
-void pushLargeObstacle(LargeObstacle s){
-	if(ableToBuildAt(s.z, s.position)){
-		largeObstacles.push_back(s);
+void reactivateLargeObstacle(double z, double x){
+	if(!myLargeObstacles[0].drawBool){
+		myLargeObstacles[0].activateAgain(z, x);
+		return;
+	}
+	if(!myLargeObstacles[1].drawBool){
+		myLargeObstacles[1].activateAgain(z, x);
+		return;
 	}
 }
+//void pushLargeObstacle(LargeObstacle s){
+//	if(ableToBuildAt(s.z, s.position)){
+//		largeObstacles.push_back(s);
+//	}
+//}
 void generateObstacle(){
 	generateFirstObstacle();
 }
@@ -603,10 +652,10 @@ void generateFirstObstacle(){
 		// 2 --> right.
 		t = rand() % 3 + 1;
 		switch(t){
-			case 1 : pushSmallObstacle(SmallObstacle(Eye.z - 20, -1.5));break;
-			case 2 : pushSmallObstacle(SmallObstacle(Eye.z - 20, 0));break;
-			case 3 : pushSmallObstacle(SmallObstacle(Eye.z - 20, 1.5));break;
-			default : pushSmallObstacle(SmallObstacle(Eye.z - 20, 1.5));
+			case 1 : reactivateSmallObstacle(Eye.z - 20, -1.5);break;
+			case 2 : reactivateSmallObstacle(Eye.z - 20, 0);break;
+			case 3 : reactivateSmallObstacle(Eye.z - 20, 1.5);break;
+			default : reactivateSmallObstacle(Eye.z - 20, 1.5);
 		}
 		generateSecondObstacle(t);
 	}else{
@@ -615,10 +664,10 @@ void generateFirstObstacle(){
 		// 2 --> right.
 		t = rand() % 3 +1;
 		switch(t){
-			case 1 : pushLargeObstacle(LargeObstacle(Eye.z - 20, -1.5)); ;break;
-			case 2 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 0));break;
-			case 3 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));break;
-			default : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));
+			case 1 : reactivateLargeObstacle(Eye.z - 20, -1.5); ;break;
+			case 2 : reactivateLargeObstacle(Eye.z - 20, 0);break;
+			case 3 : reactivateLargeObstacle(Eye.z - 20, 1.5);break;
+			default : reactivateLargeObstacle(Eye.z - 20, 1.5);
 		}
 		generateSecondObstacle(t);
 	}
@@ -636,10 +685,10 @@ void generateSecondObstacle(int last){
 			t = rand() % 3 +1;
 		}
 		switch(t){
-			case 1 : pushSmallObstacle(SmallObstacle(Eye.z - 20, -1.5));break;
-			case 2 : pushSmallObstacle(SmallObstacle(Eye.z - 20, 0));break;
-			case 3 : pushSmallObstacle(SmallObstacle(Eye.z - 20, 1.5));break;
-			default : pushSmallObstacle(SmallObstacle(Eye.z - 20, 1.5));
+			case 1 : reactivateSmallObstacle(Eye.z - 20, -1.5);break;
+			case 2 : reactivateSmallObstacle(Eye.z - 20, 0);break;
+			case 3 : reactivateSmallObstacle(Eye.z - 20, 1.5);break;
+			default : reactivateSmallObstacle(Eye.z - 20, 1.5);
 		}
 	}else{
 		// 0 --> left.
@@ -650,10 +699,10 @@ void generateSecondObstacle(int last){
 			t = rand() % 3 +1;
 		}
 		switch(t){
-			case 1 : pushLargeObstacle(LargeObstacle(Eye.z - 20, -1.5)); ;break;
-			case 2 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 0));break;
-			case 3 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));break;
-			default : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));
+			case 1 : reactivateLargeObstacle(Eye.z - 20, -1.5); ;break;
+			case 2 : reactivateLargeObstacle(Eye.z - 20, 0);break;
+			case 3 : reactivateLargeObstacle(Eye.z - 20, 1.5);break;
+			default : reactivateLargeObstacle(Eye.z - 20, 1.5);
 		}
 	}
 }
@@ -662,13 +711,23 @@ void removeLanes(){
 	// TODO remove lanes that camera has finished
 }
 bool ableToBuildAt(double z, lanePosition p){
-	for(LargeObstacle l : largeObstacles){
-		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+//	for(LargeObstacle l : largeObstacles){
+//		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+//			return false;
+//		}
+//	}
+//	for(SmallObstacle l : smallObstacles){
+//		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+//			return false;
+//		}
+//	}
+	for(LargeObstacle l : myLargeObstacles){
+		if(l.drawBool && l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
 			return false;
 		}
 	}
-	for(SmallObstacle l : smallObstacles){
-		if(l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
+	for(SmallObstacle l : mySmallObstacles){
+		if(l.drawBool && l.position == p && l.z >= z-0.2 && l.z <= z+0.2){
 			return false;
 		}
 	}
@@ -680,14 +739,26 @@ bool ableToBuildAt(double z, lanePosition p){
 	return true;
 }
 void isCollide(){
-	for(LargeObstacle l : largeObstacles){
-		if(l.position == mario.position && l.z >= mario.z-0.2 && l.z <= mario.z+0.2){
+//	for(LargeObstacle l : largeObstacles){
+//		if(l.position == mario.position && l.z >= mario.z-0.2 && l.z <= mario.z+0.2){
+//			lose = true;
+//			return;
+//		}
+//	}
+//	for(SmallObstacle s : smallObstacles){
+//		if(s.position == mario.position && s.z >= mario.z-0.2 && s.z <= mario.z+0.2 && !jumping){
+//			lose = true;
+//			return;
+//		}
+//	}
+	for(LargeObstacle l : myLargeObstacles){
+		if(l.drawBool &&l.position == mario.position && l.z >= mario.z-0.2 && l.z <= mario.z+0.2){
 			lose = true;
 			return;
 		}
 	}
-	for(SmallObstacle s : smallObstacles){
-		if(s.position == mario.position && s.z >= mario.z-0.2 && s.z <= mario.z+0.2 && !jumping){
+	for(SmallObstacle s : mySmallObstacles){
+		if(s.drawBool && s.position == mario.position && s.z >= mario.z-0.2 && s.z <= mario.z+0.2 && !jumping){
 			lose = true;
 			return;
 		}
@@ -737,11 +808,18 @@ void drawAllLanes(){
 	}
 }
 void drawObstacles(){
-	for(SmallObstacle s : smallObstacles){
-		s.draw();
+//	for(SmallObstacle s : smallObstacles){
+//		s.draw();
+//	}
+	for(SmallObstacle s : mySmallObstacles){
+		if(s.drawBool){
+			s.draw();
+		}
 	}
-	for(LargeObstacle s : largeObstacles){
-		s.draw();
+	for(LargeObstacle s : myLargeObstacles){
+		if(s.drawBool){
+			s.draw();
+		}
 	}
 //	for(LargeObstacle s : myLargeObstacles){
 //		if(s.drawBool){

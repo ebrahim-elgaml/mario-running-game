@@ -18,6 +18,7 @@ void generateSecondObstacle(int);
 void isCollide();
 void generateCoin();
 void generateCoinsLine(double);
+void activateLargeObstacle(double, double);
 int WIDTH = 1280;
 int HEIGHT = 720;
 
@@ -53,8 +54,12 @@ class Lane
 {
 	public:
 		GLdouble z;
+		bool selected = false;
+		bool drawBool = true;
 		Lane() {z = 0;}
 		Lane(GLdouble _z) : z(_z) {}
+		Lane(GLdouble _z, bool s) : z(_z) {selected = s;}
+		Lane(GLdouble _z, bool s, bool d) : z(_z) {selected = s; drawBool = d;}
 		void draw(){
 			glColor3f(0.5,0.5,0.5);
 			glPushMatrix();
@@ -131,6 +136,7 @@ class SmallObstacle
 		GLdouble x ;
 		GLdouble y = 2;
 		lanePosition position = MIDDLE;
+		bool drawBool = false;
 		SmallObstacle() {z= x = 0; setLane(); }
 		SmallObstacle(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
 		void draw(){
@@ -189,6 +195,12 @@ class LargeObstacle
 				x = -1.5;
 			}
 		}
+//		void activateAgain(double _z, double _x){
+//			z = _z;
+//			x= _x;
+//			setLane();
+//			drawBool = true;
+//		}
 };
 
 class Coin
@@ -232,7 +244,9 @@ bool ableToBuildAt(double, lanePosition);
 Vector Eye(0, 5, 10);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
-vector<Lane> lanes;
+//vector<Lane> lanes;
+Lane myLanes[2]= {Lane(Eye.z - 10,true,true), Lane(Eye.z - 10,false,false)};
+//LargeObstacle myLargeObstacles[2] = {LargeObstacle(0,0), LargeObstacle(0,0)};
 vector<SmallObstacle> smallObstacles;
 vector<LargeObstacle> largeObstacles;
 vector<Coin> coins ;
@@ -390,9 +404,15 @@ void RenderGround()
 //=======================================================================
 void myDisplay(void)
 {
+
 	myInit();
 	//writeWord(-3,4,Eye.z,"hello");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if(lose){
+		writeWord(-3, 4, wordZ, "Game Over with score "+to_string(myScore));
+	}else{
+		writeWord(-3, 4, wordZ, to_string(myScore));
+	}
 	//gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 	// Draw Ground
 	//RenderGround();
@@ -417,17 +437,11 @@ void myDisplay(void)
 //		Lane l(0);
 //		l.draw();
 //	}
-
-
 	drawAllLanes();
 	mario.draw();
 	drawObstacles();
 	drawAllCoins();
-	if(lose){
-		writeWord(-3, 4, wordZ, "Game Over with score "+to_string(myScore));
-	}else{
-		writeWord(-3, 4, wordZ, to_string(myScore));
-	}
+
 	glutSwapBuffers();
 
 }
@@ -437,15 +451,35 @@ void drawAllCoins(){
 	}
 }
 void initGround(){
-	if(lanes.size() == 0){
-		lanes.push_back(Lane(Eye.z - 10));
-	}else{
-		if(Eye.z <= initialZ -15 ){
-			lanes.pop_back();
-			lanes.push_back(Lane(Eye.z - 10));
-			initialZ = Eye.z;
+	if(Eye.z <= initialZ -15 ){
+		if(myLanes[0].selected){
+			myLanes[0].selected = false;
+			myLanes[1].z = Eye.z - 10;
+			myLanes[1].selected = true;
+		}else{
+			myLanes[1].selected = false;
+			myLanes[0].z = Eye.z - 10;
+			myLanes[0].selected = true;
 		}
+		myLanes[1].drawBool = true;
+		initialZ = Eye.z;
 	}
+//	if(lanes.size() == 0){
+//		lanes.push_back(Lane(Eye.z - 10));
+//	}else{
+//		if(Eye.z <= initialZ -15 ){
+//			if(myLanes[0].selected){
+//				myLanes[0].selected = false;
+//				myLanes[1].z = Eye.z - 10;
+//			}else{
+//				myLanes[1].selected = false;
+//				myLanes[0].z = Eye.z - 10;
+//			}
+////			lanes.pop_back();
+////			lanes.push_back(Lane(Eye.z - 10));
+////			initialZ = Eye.z;
+//		}
+//	}
 }
 void removeObstacles(){
 	for(int i = 0 ; i<smallObstacles.size(); i++){
@@ -460,6 +494,13 @@ void removeObstacles(){
 			largeObstacles.erase(largeObstacles.begin() + i);
 		}
 	}
+//	for(int i = 0 ; i<2; i++){
+//		LargeObstacle s = myLargeObstacles[i];
+//		if(s.z > mario.z && s.drawBool){
+//			s.drawBool = false;
+//			//largeObstacles.erase(largeObstacles.begin() + i);
+//		}
+//	}
 }
 void removeCoins(){
 	for(int i = 0 ; i<coins.size(); i++){
@@ -482,6 +523,16 @@ void pushLargeObstacle(LargeObstacle s){
 void generateObstacle(){
 	generateFirstObstacle();
 }
+//void activateLargeObstacle(double z, double position){
+//	if(!myLargeObstacles[0].drawBool){
+//		myLargeObstacles[0].activateAgain(z, position);
+//		return;
+//	}
+//	if(!myLargeObstacles[1].drawBool){
+//		myLargeObstacles[1].activateAgain(z, position);
+//		return;
+//	}
+//}
 void generateFirstObstacle(){
 	// 0 --> smallObject.
 	// 1 --> largeObject.
@@ -504,10 +555,10 @@ void generateFirstObstacle(){
 		// 2 --> right.
 		t = rand() % 3 +1;
 		switch(t){
-			case 1 : largeObstacles.push_back(LargeObstacle(Eye.z - 20, -1.5));break;
-			case 2 : largeObstacles.push_back(LargeObstacle(Eye.z - 20, 0));break;
-			case 3 : largeObstacles.push_back(LargeObstacle(Eye.z - 20, 1.5));break;
-			default : largeObstacles.push_back(LargeObstacle(Eye.z - 20, 1.5));
+			case 1 : pushLargeObstacle(LargeObstacle(Eye.z - 20, -1.5)); ;break;
+			case 2 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 0));break;
+			case 3 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));break;
+			default : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));
 		}
 		generateSecondObstacle(t);
 	}
@@ -539,7 +590,7 @@ void generateSecondObstacle(int last){
 			t = rand() % 3 +1;
 		}
 		switch(t){
-			case 1 : pushLargeObstacle(LargeObstacle(Eye.z - 20, -1.5));break;
+			case 1 : pushLargeObstacle(LargeObstacle(Eye.z - 20, -1.5)); ;break;
 			case 2 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 0));break;
 			case 3 : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));break;
 			default : pushLargeObstacle(LargeObstacle(Eye.z - 20, 1.5));
@@ -570,13 +621,13 @@ bool ableToBuildAt(double z, lanePosition p){
 }
 void isCollide(){
 	for(LargeObstacle l : largeObstacles){
-		if(l.position == mario.position && l.z >= mario.z-0.5 && l.z <= mario.z+0.2){
+		if(l.position == mario.position && l.z >= mario.z-0.2 && l.z <= mario.z+0.2){
 			lose = true;
 			return;
 		}
 	}
 	for(SmallObstacle s : smallObstacles){
-		if(s.position == mario.position && s.z >= mario.z-0.5 && s.z <= mario.z+0.2 && !jumping){
+		if(s.position == mario.position && s.z >= mario.z-0.2 && s.z <= mario.z+0.2 && !jumping){
 			lose = true;
 			return;
 		}
@@ -615,8 +666,14 @@ void generateCoinsLine(double x){
 }
 
 void drawAllLanes(){
-	for(Lane l : lanes){
-		l.draw();
+//	for(Lane l : lanes){
+//		if(l.drawBool){
+//			l.draw();
+//		}
+//	}
+	myLanes[0].draw();
+	if(myLanes[1].drawBool){
+		myLanes[1].draw();
 	}
 }
 void drawObstacles(){
@@ -626,6 +683,11 @@ void drawObstacles(){
 	for(LargeObstacle s : largeObstacles){
 		s.draw();
 	}
+//	for(LargeObstacle s : myLargeObstacles){
+//		if(s.drawBool){
+//			s.draw();
+//		}
+//	}
 }
 
 

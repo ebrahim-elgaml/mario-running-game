@@ -20,6 +20,9 @@ void generateSecondObstacle(int);
 void isCollide();
 void generateCoin();
 void generateCoinsLine(double);
+void reset();
+void drawLoseSeen();
+void drawWinSeen();
 int WIDTH = 1280;
 int HEIGHT = 720;
 char title[] = "Mario in Egypt";
@@ -60,6 +63,11 @@ class Lane
 		Lane(GLdouble _z) : z(_z) {}
 		Lane(GLdouble _z, bool s) : z(_z) {selected = s;}
 		Lane(GLdouble _z, bool s, bool d) : z(_z) {selected = s; drawBool = d;}
+		void reset(GLdouble _z, bool s, bool d){
+			z = _z;
+			selected = s;
+			drawBool = d;
+		}
 		void draw(){
 			glColor3f(0.5,0.5,0.5);
 			glPushMatrix();
@@ -155,8 +163,6 @@ class Mario
 			return true;
 		}
 };
-
-
 class SmallObstacle
 {
 	public:
@@ -167,6 +173,12 @@ class SmallObstacle
 		bool drawBool = false;
 		SmallObstacle() {z= x = 0; setLane(); }
 		SmallObstacle(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
+		void reset(GLdouble _z, GLdouble _x){
+			drawBool = false;
+			z = _z;
+			x = _x;
+			setLane();
+		}
 		void draw(){
 			glPushMatrix();
 			glColor3f(0, 1, 0);
@@ -207,6 +219,12 @@ class LargeObstacle
 		bool drawBool = false;
 		LargeObstacle() {z= x = 0; setLane(); }
 		LargeObstacle(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
+		void reset(GLdouble _z, GLdouble _x){
+			drawBool = false;
+			z = _z;
+			x = _x;
+			setLane();
+		}
 		void draw(){
 			glPushMatrix();
 			glColor3f(0, 1, 0);
@@ -255,6 +273,12 @@ class Coin
 		bool drawBool = false;
 		Coin() {z= x = 0; setLane(); }
 		Coin(GLdouble _z, GLdouble _x) : z(_z), x(_x){setLane();}
+		void reset(GLdouble _z, GLdouble _x){
+			drawBool = false;
+			z = _z;
+			x = _x;
+			setLane();
+		}
 		void draw(){
 			glPushMatrix();
 			glColor3f(1, 200.0/255, 0);
@@ -315,6 +339,8 @@ double wordZ = 0;
 bool lose = false;
 int myScore = 0;
 Target target(0);
+bool win = false;
+int winningTime = 300;//winning time in seconds
 //double wordY = 2;
 // Model Variables
 //Model_3DS model_house;
@@ -358,18 +384,14 @@ void writeWord(int x , int y , int z , string s){
 		//glDepthMask(GL_FALSE);
 		//glDisable(GL_DEPTH_TEST);
 		//glRasterPos2d(x,y);
+		//glScaled(1.5,1.5,1);
 		glRasterPos3d(x,y,z);
 		glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 		for(int i = 0; s[i]!='\0';i++){
-			glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s[i]);
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[i]);
 		}
 		//glEnable(GL_DEPTH_TEST);
-
 		glPopMatrix();
-
-
-
-
 //	glPushMatrix();
 //	//glMatrixMode(GL_MODELVIEW);
 //	glClear(GL_COLOR_BUFFER_BIT);
@@ -488,11 +510,7 @@ void myDisplay(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glLoadIdentity();
 	glDepthMask(GL_FALSE);
-	if(lose){
-		writeWord(-2, 4, wordZ, "Game Over with score "+to_string(myScore));
-	}else{
-		writeWord(-2, 4, wordZ, to_string(myScore));
-	}
+
 	//writeWord(-2, 4, wordZ, to_string(mySmallObstacles[0].drawBool));
 	glDepthMask(GL_TRUE);
 	//gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
@@ -519,13 +537,80 @@ void myDisplay(void)
 //		Lane l(0);
 //		l.draw();
 //	}
-	drawAllLanes();
-	mario.draw();
-	drawObstacles();
-	drawAllCoins();
-	target.draw();
+	if(lose){
+		drawLoseSeen();
+	}else if(win){
+		drawWinSeen();
+	}else{
+		//writeWord(-4, 4, wordZ, "score :" +to_string(myScore));
+		drawAllLanes();
+		mario.draw();
+		drawObstacles();
+		drawAllCoins();
+		target.draw();
+	}
 	glutSwapBuffers();
 
+}
+void drawLoseSeen(){
+	writeWord(-2, 2, wordZ, "Game Over with score ("+to_string(myScore)+")coins, Press (r) to Play again");
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	GLUquadricObj * qobj;
+	qobj = gluNewQuadric();
+	glTranslated(0, 0, wordZ);
+	glRotated(90,1,0,0);
+	gluQuadricDrawStyle(qobj,GLU_LINE);
+	gluCylinder(qobj, 0.5, 0.5, 1, 100,100);
+	glPopMatrix();
+
+}
+void drawWinSeen(){
+	writeWord(-2, 2, wordZ, "You reached your target with ("+to_string(myScore)+") coins, Press (r) to Play again");
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	GLUquadricObj * qobj;
+	qobj = gluNewQuadric();
+	glTranslated(0, 0, wordZ);
+	glRotated(90,1,0,0);
+	gluQuadricDrawStyle(qobj,GLU_LINE);
+	gluCylinder(qobj, 0.5, 0.5, 1, 100,100);
+	glPopMatrix();
+}
+void reset(){
+	Eye.x = 0;
+	Eye.y = 5;
+	Eye.z = 10;
+	At.x = 0;
+	At.y = 0;
+	At.z = 0;
+	Up.x = 0;
+	Up.y = 1;
+	Up.z = 0;
+	myLanes[0].reset(Eye.z - 10,true,true);
+	myLanes[1].reset(Eye.z - 10, false, false);
+	mySmallObstacles[0].reset(0, 0);
+	mySmallObstacles[1].reset(0, 0);
+	myLargeObstacles[0].reset(0, 0);
+	myLargeObstacles[1].reset(0, 0);
+	myCoins[0].reset(0, 0);
+	myCoins[1].reset(0, 0);
+	myCoins[2].reset(0, 0);
+	moveZ = -0.1;
+	cameraZoom = 0;
+	initialZ = Eye.z;
+	mario.z = 5;
+	initialMario = 0;
+	moveLeftBool = false;
+	moveRightBool = false;
+	jumping = false;
+	moveY = 0.1;
+	myTime = 0;
+	wordZ = 0;
+	lose = false;
+	myScore = 0;
+	target.z= 0;
+	win = false;
 }
 void drawAllCoins(){
 //	for(Coin c: coins){
@@ -909,7 +994,10 @@ void myKeyboard(unsigned char button, int x, int y)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		break;
 	case 'r':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		if(lose || win){
+			reset();
+		}
 		break;
 	case 'a':
 		if(!moveLeftBool && !moveRightBool){
@@ -1078,7 +1166,7 @@ void Anim(){
 	rot+=0.5;
 	initGround();
 	removeLanes();
-	if(!lose){
+	if(!lose && !win){
 		Eye.incrementZ(moveZ);
 		At.incrementZ(moveZ);
 		mario.z += moveZ;
@@ -1094,12 +1182,15 @@ void Anim(){
 void Timer(int value) {
   // ask OpenGL to recall the display function to reflect the changes on the window
   glutPostRedisplay();
-  if(!lose){
+  if(!lose && !win){
 	  myTime+=1;
 	  if(myTime % 4 == 0){
 		  generateObstacle();
 	  }else if(myTime%2 == 0 ){
 		  generateCoin();
+	  }
+	  if(myTime >= winningTime){
+		  win = true;
 	  }
   }
   // recall the Timer function after 20 seconds (20,000 milliseconds)
